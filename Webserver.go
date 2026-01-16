@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
+	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 )
 
@@ -29,32 +29,12 @@ func notFoundHandler(ctx *fasthttp.RequestCtx) {
 	ctx.WriteString(html)
 }
 
-func router(ctx *fasthttp.RequestCtx) {
-	path := string(ctx.Path())
+func Index(ctx *fasthttp.RequestCtx) {
+	ctx.WriteString("Welcome!")
+}
 
-	if path == "/test" {
-		ctx.SetContentType("text/html")
-		ctx.WriteString("<h1>Test Seite</h1>")
-	} else if path == "/" {
-		fs := &fasthttp.FS{
-			Root:       ".",
-			IndexNames: []string{"index.html"},
-			Compress:   true,
-		}
-		fs.NewRequestHandler()(ctx)
-	} else {
-		filePath := "." + path
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			notFoundHandler(ctx)
-		} else {
-			fs := &fasthttp.FS{
-				Root:       ".",
-				IndexNames: []string{"index.html"},
-				Compress:   true,
-			}
-			fs.NewRequestHandler()(ctx)
-		}
-	}
+func Hello(ctx *fasthttp.RequestCtx) {
+	fmt.Fprintf(ctx, "Hello, %s!\n", ctx.UserValue("name"))
 }
 
 func main() {
@@ -65,8 +45,13 @@ func main() {
 	if question == "yes" {
 		fmt.Println("Running on http://localhost:8080")
 
+		r := router.New()
+		r.GET("/", Index)
+		r.GET("/hello/{name}", Hello)
+		log.Fatal(fasthttp.ListenAndServe(":8080", r.Handler))
+
 		server := &fasthttp.Server{
-			Handler:            router,
+			Handler:            r.Handler,
 			ReadTimeout:        5 * time.Minute,
 			WriteTimeout:       10 * time.Second,
 			MaxRequestBodySize: 2 * 1024 * 1024,
