@@ -1,13 +1,24 @@
 package main
 
 import (
+	"embed"
+	_ "embed"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 )
+
+//go:embed index.html
+var content embed.FS
+
+func fileHandler() {
+	http.Handle("/", http.FileServer(http.Dir("html")))
+
+}
 
 func notFoundHandler(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(404)
