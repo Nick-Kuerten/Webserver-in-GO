@@ -10,7 +10,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-//go:embed html/*
+//go:embed index.html
 var content embed.FS
 
 func notFoundHandler(ctx *fasthttp.RequestCtx) {
@@ -34,11 +34,11 @@ func notFoundHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func Index(ctx *fasthttp.RequestCtx) {
-	data, err := content.ReadFile("html/index.html")
+	data, err := content.ReadFile("index.html")
 	if err != nil {
 		ctx.SetStatusCode(500)
 		ctx.SetContentType("text/plain; charset=utf-8")
-		ctx.WriteString("error loading html/index.html: " + err.Error())
+		ctx.WriteString("error loading index.html: " + err.Error())
 		return
 	}
 
