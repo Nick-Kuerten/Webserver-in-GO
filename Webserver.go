@@ -74,28 +74,34 @@ func Index(ctx *fasthttp.RequestCtx) {
 	}
 }
 
+func Api(ctx *fasthttp.RequestCtx) {
+	ctx.SetContentType("application/json; charset=utf-8")
+	ctx.WriteString(`{"status":"ok","time":"` + time.Now().Format(time.RFC3339) + `"}`)
+}
+
 func main() {
 	var question string
 	fmt.Print("   Wana run the Server? (yes/no)")
 	fmt.Print("\n-> ")
 	fmt.Scan(&question)
 	if question == "yes" {
-		fmt.Println("Running on http://localhost:8080")
 
-		r := router.New()
-		r.GET("/", Index)
-		log.Fatal(fasthttp.ListenAndServe(":8080", r.Handler))
+		webRouter := router.New()
+		webRouter.GET("/", Index)
 
-		server := &fasthttp.Server{
-			Handler:            r.Handler,
-			ReadTimeout:        5 * time.Minute,
-			WriteTimeout:       10 * time.Second,
-			MaxRequestBodySize: 2 * 1024 * 1024,
-		}
+		apiRouter := router.New()
+		apiRouter.GET("/", Api)
 
-		err := server.ListenAndServe(":8080")
-		if err != nil {
-			log.Fatal(err)
+		fmt.Println("HTML Server running on http://localhost:8080")
+		go func() {
+			if err := fasthttp.ListenAndServe(":8080", webRouter.Handler); err != nil {
+				log.Fatalf("Error starting HTML Server: %v", err)
+			}
+		}()
+
+		fmt.Println("Server running on http://localhost:8081")
+		if err := fasthttp.ListenAndServe(":8081", apiRouter.Handler); err != nil {
+			log.Fatalf("Error starting Server: %v", err)
 		}
 	} else {
 		fmt.Println("Exiting...")
