@@ -2,23 +2,16 @@ package main
 
 import (
 	"embed"
-	_ "embed"
 	"fmt"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 )
 
-//go:embed index.html
+//go:embed html/*
 var content embed.FS
-
-func fileHandler() {
-	http.Handle("/", http.FileServer(http.Dir("html")))
-
-}
 
 func notFoundHandler(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(404)
@@ -41,7 +34,16 @@ func notFoundHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func Index(ctx *fasthttp.RequestCtx) {
-	ctx.WriteString("Welcome!")
+	data, err := content.ReadFile("html/index.html")
+	if err != nil {
+		ctx.SetStatusCode(500)
+		ctx.SetContentType("text/plain; charset=utf-8")
+		ctx.WriteString("Fehler beim Laden von html/index.html: " + err.Error())
+		return
+	}
+
+	ctx.SetContentType("text/html; charset=utf-8")
+	ctx.Write(data)
 }
 
 func Hello(ctx *fasthttp.RequestCtx) {
