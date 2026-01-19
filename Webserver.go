@@ -35,9 +35,9 @@ func notFoundHandler(ctx *fasthttp.RequestCtx) {
 }
 
 func Index(ctx *fasthttp.RequestCtx) {
-	data, err := content.ReadFile("index.html")
+	tmpl, err := template.ParseFS(content, "index.html")
 	if err != nil {
-		tmpl, tmplErr := template.New("index.html").Parse(`{{define "T"}}There was an unexpected error loading index.html: {{.}}!{{end}}`)
+		fallbackTmpl, tmplErr := template.New("error").Parse(`There was an unexpected error loading index.html: {{.}}`)
 		if tmplErr != nil {
 			ctx.SetStatusCode(500)
 			ctx.SetContentType("text/plain; charset=utf-8")
@@ -48,7 +48,7 @@ func Index(ctx *fasthttp.RequestCtx) {
 		ctx.SetStatusCode(500)
 		ctx.SetContentType("text/html; charset=utf-8")
 
-		if execErr := tmpl.ExecuteTemplate(ctx.Response.BodyWriter(), "T", err.Error()); execErr != nil {
+		if execErr := fallbackTmpl.Execute(ctx.Response.BodyWriter(), err.Error()); execErr != nil {
 			ctx.SetStatusCode(500)
 			ctx.SetContentType("text/plain; charset=utf-8")
 			ctx.WriteString("error executing error-template: " + execErr.Error())
@@ -57,8 +57,21 @@ func Index(ctx *fasthttp.RequestCtx) {
 	}
 
 	ctx.SetContentType("text/html; charset=utf-8")
-	ctx.Write(data)
 
+	data := map[string]any{
+		"Title":  "Webserver",
+		"Now":    time.Now().Format(time.RFC3339),
+		"Path":   ctx.Path(),
+		"Method": ctx.Method(),
+		"Host":   ctx.Host(),
+	}
+
+	if execErr := tmpl.ExecuteTemplate(ctx.Response.BodyWriter(), "index.html", data); execErr != nil {
+		ctx.SetStatusCode(500)
+		ctx.SetContentType("text/plain; charset=utf-8")
+		ctx.WriteString("error executing template: " + execErr.Error())
+		return
+	}
 }
 
 func main() {
