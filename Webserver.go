@@ -38,7 +38,7 @@ func Index(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		ctx.SetStatusCode(500)
 		ctx.SetContentType("text/plain; charset=utf-8")
-		ctx.WriteString("Fehler beim Laden von html/index.html: " + err.Error())
+		ctx.WriteString("error loading html/index.html: " + err.Error())
 		return
 	}
 
