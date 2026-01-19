@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"fmt"
+	"html/template"
 	"log"
 	"time"
 
@@ -36,14 +37,28 @@ func notFoundHandler(ctx *fasthttp.RequestCtx) {
 func Index(ctx *fasthttp.RequestCtx) {
 	data, err := content.ReadFile("index.html")
 	if err != nil {
+		tmpl, tmplErr := template.New("index.html").Parse(`{{define "T"}}There was an unexpected error loading index.html: {{.}}!{{end}}`)
+		if tmplErr != nil {
+			ctx.SetStatusCode(500)
+			ctx.SetContentType("text/plain; charset=utf-8")
+			ctx.WriteString("error creating error-template: " + tmplErr.Error())
+			return
+		}
+
 		ctx.SetStatusCode(500)
-		ctx.SetContentType("text/plain; charset=utf-8")
-		ctx.WriteString("error loading index.html: " + err.Error())
+		ctx.SetContentType("text/html; charset=utf-8")
+
+		if execErr := tmpl.ExecuteTemplate(ctx.Response.BodyWriter(), "T", err.Error()); execErr != nil {
+			ctx.SetStatusCode(500)
+			ctx.SetContentType("text/plain; charset=utf-8")
+			ctx.WriteString("error executing error-template: " + execErr.Error())
+		}
 		return
 	}
 
 	ctx.SetContentType("text/html; charset=utf-8")
 	ctx.Write(data)
+
 }
 
 func main() {
